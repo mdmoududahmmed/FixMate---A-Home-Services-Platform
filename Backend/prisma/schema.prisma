@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  TECHNICIAN
+  ADMIN
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  fullName   String
+  phone      String   @unique
+  password   String
+  role       UserRole @default(CUSTOMER)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // connected to ইউজারের সাথে রিকোয়েস্টের রিলেশন
+  requests   ServiceRequest[] @relation("UserRequests")
+}
+
+// Service Category (types of ServiceRequest)
+model ServiceCategory {
+  id          Int               @id @default(autoincrement())
+  name        String
+  key         String            @unique
+  requests    ServiceRequest[]  @relation("CategoryRequests")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+// Service Request (request table)
+model ServiceRequest {
+  id          Int               @id @default(autoincrement())
+  customerId  Int
+  categoryId  Int
+  description String
+  location    String
+  status      RequestStatus     @default(PENDING)
+  
+  // রিলেশন সঠিকভাবে নামকরণ করা হয়েছে
+  customer    User              @relation("UserRequests", fields: [customerId], references: [id])
+  category    ServiceCategory   @relation("CategoryRequests", fields: [categoryId], references: [id])
+
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+// রিকোয়েস্টের স্ট্যাটাস
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
