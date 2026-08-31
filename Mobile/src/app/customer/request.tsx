@@ -1,7 +1,8 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, Alert, StyleSheet, 
-  ScrollView, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView 
+  ScrollView, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, 
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,7 +44,7 @@ export default function RequestServiceScreen() {
 
     setLoading(true);
     try {
-      // ব্যাকএন্ডে রিকোয়েস্ট পাঠানো
+      // request to backend api to create a new service request
       await api.post('/service-requests', {
         categoryId: selectedCategoryId,
         description,
@@ -111,7 +112,7 @@ export default function RequestServiceScreen() {
             )}
           </View>
 
-          {/* ===== বিবরণ ===== */}
+          {/* ===== Description ===== */}
           <View style={styles.card}>
             <View style={styles.labelRow}>
               <Ionicons name="document-text-outline" size={22} color="#2ECC71" />
@@ -129,7 +130,7 @@ export default function RequestServiceScreen() {
             />
           </View>
 
-          {/* ===== লোকেশন ===== */}
+          {/* ===== Location ===== */}
           <View style={styles.card}>
             <View style={styles.labelRow}>
               <Ionicons name="location-outline" size={22} color="#2ECC71" />
@@ -144,7 +145,7 @@ export default function RequestServiceScreen() {
             />
           </View>
 
-          {/* ===== Continue বাটন ===== */}
+          {/* ===== Continue button ===== */}
           <TouchableOpacity 
             style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
             onPress={handleSubmit}
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
   input: { fontSize: 16, color: '#1e293b', paddingVertical: 8, borderBottomWidth: 1.5, borderBottomColor: '#e2e8f0' },
   textArea: { minHeight: 80, textAlignVertical: 'top', borderBottomWidth: 1.5 },
 
-  // ===== ড্রপডাউন স্টাইল =====
+  // ===== Dropdown Style =====
   pickerContainer: { marginTop: 5 },
   optionItem: {
     flexDirection: 'row',
