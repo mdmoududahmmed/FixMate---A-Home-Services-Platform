@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import api from '../../services/api';
 
 export default function OrdersScreen() {
@@ -9,19 +9,25 @@ export default function OrdersScreen() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await api.get('/service-requests/my-orders');
-        setOrders(res.data);
-      } catch (error) {
-        console.error('Failed to load orders', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrders();
+  // ডাটা লোড করার function
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await api.get('/service-requests/my-orders');
+      setOrders(res.data);
+    } catch (error) {
+      console.error('Failed to load orders', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // everytime Orders পেজে ঢুকলেই ডাটা রিফ্রেশ হবে
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchOrders();
+    }, [fetchOrders])
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Keyboard, Platform, Alert, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../services/api';
@@ -7,17 +7,54 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function ChatScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams(); 
+  const { id } = useLocalSearchParams(); //which technician to chat with
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  // keyboard height state for animation
+  const keyboardHeight = useRef(new Animated.Value(0)).current;
 
+  // keyboard show/hide listener
   useEffect(() => {
-    let isMounted = true; 
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        // when keyboard shows, adjust the input box position
+        Animated.timing(keyboardHeight, {
+          toValue: e.endCoordinates.height + 40, 
+          duration: 200,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        // when keyboard hides, reset the input box position
+        Animated.timing(keyboardHeight, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, [keyboardHeight]);
+
+  // function to load chat messages
+  useEffect(() => {
+    let isMounted = true; // flag to prevent state updates after component unmount
 
     const fetchMessages = async () => {
-      // id না থাকলে API কল হবে না
-      if (!id) {
+      if (!id) { // without a valid id, we can't fetch messages
         setMessages([]);
         setLoading(false);
         return;
@@ -44,11 +81,11 @@ export default function ChatScreen() {
     };
   }, [id]);
 
-    const handleSend = async () => {
+  // function to send a new message
+  const handleSend = async () => {
     if (!newMessage.trim()) return;
 
     const receiverId = Number(id); 
-    console.log('Sending to receiverId:', receiverId); 
 
     if (!receiverId) {
       Alert.alert('Error', 'Invalid receiver ID');
@@ -60,61 +97,63 @@ export default function ChatScreen() {
         receiverId: receiverId,
         content: newMessage,
       });
-      setMessages((prev) => [...prev, res.data]);
+      setMessages((prev) => [...prev, res.data]); 
       setNewMessage('');
     } catch (error: any) {
       console.error('Full error:', error); 
       const msg = error?.response?.data?.message || error?.message || 'Could not send message';
-      Alert.alert('Error Details', String(msg)); // main error to show
+      Alert.alert('Error Details', String(msg));
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
+      {/* header section */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Chat</Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      {/* message box scroll action */}
+      <ScrollView 
+        style={styles.messageArea} 
+        contentContainerStyle={styles.messageContainer}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Chat</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        <ScrollView style={styles.messageArea} contentContainerStyle={styles.messageContainer}>
-          {messages.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No messages yet. Say hello! 👋</Text>
-            </View>
-          ) : (
-            messages.map((msg: any) => (
-              <View key={msg.id} style={styles.messageRow}>
-                <View style={styles.messageBubble}>
-                  <Text style={styles.messageText}>{msg.content}</Text>
-                  <Text style={styles.messageTime}>
-                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </View>
+        {messages.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No messages yet. Say hello! 👋</Text>
+          </View>
+        ) : (
+          messages.map((msg: any) => (
+            <View key={msg.id} style={styles.messageRow}>
+              <View style={styles.messageBubble}>
+                <Text style={styles.messageText}>{msg.content}</Text>
+                <Text style={styles.messageTime}>
+                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
               </View>
-            ))
-          )}
-        </ScrollView>
+            </View>
+          ))
+        )}
+      </ScrollView>
 
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Type a message..."
-            placeholderTextColor="#999"
-            value={newMessage}
-            onChangeText={setNewMessage}
-          />
-          <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-            <Ionicons name="send" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+      {/* input box - with keyboard animation */}
+      <Animated.View style={[styles.inputContainer, { paddingBottom: keyboardHeight }]}>
+        <TextInput
+          style={styles.input}
+          placeholder="Type a message..."
+          placeholderTextColor="#999"
+          value={newMessage}
+          onChangeText={setNewMessage}
+        />
+        <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+          <Ionicons name="send" size={20} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -127,12 +166,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#2ECC71',
     padding: 16,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
   },
   headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   messageArea: { flex: 1 },
-  messageContainer: { padding: 16 },
+  messageContainer: { padding: 16, flexGrow: 1 },
   emptyContainer: { alignItems: 'center', marginTop: 50 },
   emptyText: { fontSize: 16, color: '#64748b' },
   messageRow: { marginBottom: 12 },
@@ -157,6 +194,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#eee',
+    position: 'absolute',
+    bottom: 15, 
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   input: {
     flex: 1,

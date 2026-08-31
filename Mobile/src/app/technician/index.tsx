@@ -2,12 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import api from '../../services/api';
 
 export default function TechnicianDashboard() {
   const router = useRouter();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // logout function
+  const handleLogout = async () => {
+    await SecureStore.deleteItemAsync('token');
+    router.replace('/');
+  };
 
   const fetchJobs = async () => {
     try {
@@ -21,7 +28,7 @@ export default function TechnicianDashboard() {
   };
 
   useEffect(() => {
-    let isMounted = true; // red flag remove
+    let isMounted = true;
 
     const loadJobs = async () => {
       try {
@@ -57,7 +64,14 @@ export default function TechnicianDashboard() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.title}>🔧 Technician Dashboard</Text>
+        {/* header and logout button */}
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>🔧 Technician Dashboard</Text>
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+
         {jobs.length === 0 ? (
           <Text style={styles.empty}>No pending jobs right now.</Text>
         ) : (
@@ -86,7 +100,20 @@ export default function TechnicianDashboard() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#E8F5E9' },
   scrollContainer: { padding: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#1e293b', marginBottom: 20 },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
+  logoutBtn: {
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  logoutText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
   empty: { textAlign: 'center', marginTop: 50, color: '#64748b' },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 15, elevation: 3 },
   category: { fontSize: 18, fontWeight: 'bold', color: '#2ECC71' },
