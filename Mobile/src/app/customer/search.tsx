@@ -49,7 +49,7 @@ export default function FindTechnicianScreen() {
             <TouchableOpacity 
               key={tech.id} 
               style={styles.card}
-              onPress={() => Alert.alert(tech.fullName, `Phone: ${tech.phone}`)}
+              onPress={() => router.push(`/customer/chat?id=${tech.id}`)}
             >
               <View style={styles.iconBox}>
                 <Ionicons name="person-circle-outline" size={40} color="#2ECC71" />

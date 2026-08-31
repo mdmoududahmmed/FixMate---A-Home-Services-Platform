@@ -6,6 +6,8 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { ServiceCategoriesModule } from './service-categories/service-categories.module';
 import { ServiceRequestsModule } from '../service-requests/service-requests.module';
 import { TechniciansModule } from './technicians/technicians.module';
+import { MessagesModule } from './messages/messages.module';
+
 @Module({
   imports: [
     AuthModule,
@@ -13,6 +15,7 @@ import { TechniciansModule } from './technicians/technicians.module';
     ServiceCategoriesModule,
     ServiceRequestsModule,
     TechniciansModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
