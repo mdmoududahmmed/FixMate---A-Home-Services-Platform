@@ -12,7 +12,7 @@ export default function HomeScreen() {
       try {
         const token = await SecureStore.getItemAsync('token');
         if (!token) {
-          router.replace('/'); // টোকেন না থাকলে লগইন পেজে
+          router.replace('/'); // If no token, redirect to login page
           return;
         }
 
@@ -20,9 +20,9 @@ export default function HomeScreen() {
         const role = decoded.role;
 
         if (role === 'CUSTOMER') {
-          router.replace('/customer'); // কাস্টমার ড্যাশবোর্ডে
+          router.replace('/customer'); // Customer dashboard
         } else if (role === 'TECHNICIAN') {
-          router.replace('/customer'); // আপাতত টেকনিশিয়ানও একই ড্যাশবোর্ডে
+          router.replace('/technician'); // technician dashboard 
         } else if (role === 'ADMIN') {
           router.replace('/customer');
         } else {
