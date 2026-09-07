@@ -1,50 +1,54 @@
+// Generator configuration for Prisma Client JS
 generator client {
   provider = "prisma-client-js"
 }
 
+// Database connection configuration using PostgreSQL and environment variables
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+// Enum representing user roles in the application
 enum UserRole {
   CUSTOMER
   TECHNICIAN
   ADMIN
 }
 
+// User model containing authentication and profile details
 model User {
-  id         Int      @id @default(autoincrement())
-  fullName   String
-  phone      String   @unique
-  password   String
-  role       UserRole @default(CUSTOMER)
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  fullName  String
+  phone     String   @unique
+  password  String
+  role      UserRole @default(CUSTOMER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // request with relation
-  requests   ServiceRequest[] @relation("UserRequests")
+  // Service requests created by this user (as a customer)
+  requests  ServiceRequest[] @relation("UserRequests")
 
-  // messaging relation
+  // Messaging relations (sent and received messages)
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
 
-  // new technician with work relation
+  // Service requests assigned to this user (as a technician)
   technicianJobs   ServiceRequest[] @relation("TechnicianRequests")
 }
 
-// Service Category (types of ServiceRequest)
+// Service Category model (types of ServiceRequest)
 model ServiceCategory {
-  id          Int               @id @default(autoincrement())
+  id          Int              @id @default(autoincrement())
   name        String
-  key         String            @unique
-  requests    ServiceRequest[]  @relation("CategoryRequests")
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  key         String           @unique
+  requests    ServiceRequest[] @relation("CategoryRequests")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }
 
-// Service Request (request table)
+// Service Request model for tracking customer orders and assignments
 model ServiceRequest {
   id           Int           @id @default(autoincrement())
   customerId   Int
@@ -54,16 +58,16 @@ model ServiceRequest {
   status       RequestStatus @default(PENDING)
   technicianId Int?
   
-  // relation
-  customer    User            @relation("UserRequests", fields: [customerId], references: [id])
-  category    ServiceCategory @relation("CategoryRequests", fields: [categoryId], references: [id])
-  technician  User?           @relation("TechnicianRequests", fields: [technicianId], references: [id])
+  // Relations to User and ServiceCategory models
+  customer     User          @relation("UserRequests", fields: [customerId], references: [id])
+  category     ServiceCategory @relation("CategoryRequests", fields: [categoryId], references: [id])
+  technician   User?         @relation("TechnicianRequests", fields: [technicianId], references: [id])
 
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
-// request status 
+// Enum for tracking the status of service requests
 enum RequestStatus {
   PENDING
   ACCEPTED
@@ -72,14 +76,17 @@ enum RequestStatus {
   CANCELLED
 }
 
-// Messaging Model 
+// Messaging Model updated to support media (photo/video) sharing
 model Message {
   id         Int      @id @default(autoincrement())
   senderId   Int
   receiverId Int
-  content    String
+  content    String?  // Made optional so users can send media-only messages
+  fileUrl    String?  // Stores the path or URL of uploaded photos/videos
+  fileType   String?  // Stores the type of media, e.g., 'IMAGE' or 'VIDEO'
   createdAt  DateTime @default(now())
 
-  sender   User @relation("SentMessages", fields: [senderId], references: [id])
-  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  // Relations for sender and receiver users
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
 }

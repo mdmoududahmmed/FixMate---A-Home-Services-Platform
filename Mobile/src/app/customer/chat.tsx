@@ -1,26 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Keyboard, Platform, Alert, Animated, Easing } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Keyboard, Platform, Alert, Animated, Easing, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../services/api';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function ChatScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams(); //which technician to chat with
+  const { id } = useLocalSearchParams(); // Which technician to chat with
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   
-  // keyboard height state for animation
+  // Keyboard height state for animation
   const keyboardHeight = useRef(new Animated.Value(0)).current;
 
-  // keyboard show/hide listener
+  // Keyboard show/hide listener
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (e) => {
-        // when keyboard shows, adjust the input box position
         Animated.timing(keyboardHeight, {
           toValue: e.endCoordinates.height + 40, 
           duration: 200,
@@ -33,7 +33,6 @@ export default function ChatScreen() {
     const keyboardDidHideListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
-        // when keyboard hides, reset the input box position
         Animated.timing(keyboardHeight, {
           toValue: 0,
           duration: 200,
@@ -49,12 +48,12 @@ export default function ChatScreen() {
     };
   }, [keyboardHeight]);
 
-  // function to load chat messages
+  // Function to load chat messages
   useEffect(() => {
-    let isMounted = true; // flag to prevent state updates after component unmount
+    let isMounted = true;
 
     const fetchMessages = async () => {
-      if (!id) { // without a valid id, we can't fetch messages
+      if (!id) {
         setMessages([]);
         setLoading(false);
         return;
@@ -81,7 +80,7 @@ export default function ChatScreen() {
     };
   }, [id]);
 
-  // function to send a new message
+  // Function to send a text message
   const handleSend = async () => {
     if (!newMessage.trim()) return;
 
@@ -106,18 +105,71 @@ export default function ChatScreen() {
     }
   };
 
+  // Function to pick an image/video from gallery and upload
+  const handlePickMedia = async () => {
+    const receiverId = Number(id);
+    if (!receiverId) {
+      Alert.alert('Error', 'Invalid receiver ID');
+      return;
+    }
+
+    // Request permission to access media library
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permission Denied', 'You need to grant camera roll permissions to send media.');
+      return;
+    }
+
+    // Launch image picker with updated mediaTypes array syntax
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const selectedAsset = result.assets[0];
+      const localUri = selectedAsset.uri;
+      const filename = localUri.split('/').pop() || 'upload.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+      // Create FormData to send file to backend
+      const formData = new FormData();
+      formData.append('receiverId', String(receiverId));
+      formData.append('file', {
+        uri: localUri,
+        name: filename,
+        type: selectedAsset.type === 'video' ? 'video/mp4' : type,
+      } as any);
+
+      try {
+        // Uploading media via API (omitting explicit Content-Type header so Axios manages boundary automatically)
+        const res = await api.post('/messages/upload', formData, {
+          headers: {
+            Accept: 'application/json',
+          },
+        });
+        setMessages((prev) => [...prev, res.data]);
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        Alert.alert('Error', 'Failed to upload media');
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* header section */}
+      {/* Header section */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chat</Text>
+        <Text style={styles.headerTitle}>Chat with Technician</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      {/* message box scroll action */}
+      {/* Message box scroll action */}
       <ScrollView 
         style={styles.messageArea} 
         contentContainerStyle={styles.messageContainer}
@@ -131,7 +183,16 @@ export default function ChatScreen() {
           messages.map((msg: any) => (
             <View key={msg.id} style={styles.messageRow}>
               <View style={styles.messageBubble}>
-                <Text style={styles.messageText}>{msg.content}</Text>
+                {/* Render image if fileUrl exists */}
+                {msg.fileUrl && (
+                  <Image 
+                    source={{ uri: msg.fileUrl }} 
+                    style={styles.mediaImage} 
+                    resizeMode="cover"
+                  />
+                )}
+                {/* Render text content if available */}
+                {msg.content ? <Text style={styles.messageText}>{msg.content}</Text> : null}
                 <Text style={styles.messageTime}>
                   {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
@@ -141,8 +202,13 @@ export default function ChatScreen() {
         )}
       </ScrollView>
 
-      {/* input box - with keyboard animation */}
+      {/* Input box with media picker and send buttons */}
       <Animated.View style={[styles.inputContainer, { paddingBottom: keyboardHeight }]}>
+        {/* Button to pick photo/video */}
+        <TouchableOpacity style={styles.attachButton} onPress={handlePickMedia}>
+          <Ionicons name="image" size={24} color="#2ECC71" />
+        </TouchableOpacity>
+
         <TextInput
           style={styles.input}
           placeholder="Type a message..."
@@ -185,7 +251,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  messageText: { fontSize: 16, color: '#1e293b' },
+  messageText: { fontSize: 16, color: '#1e293b', marginTop: 4 },
+  mediaImage: { width: 200, height: 150, borderRadius: 8, marginBottom: 4 },
   messageTime: { fontSize: 11, color: '#999', marginTop: 4, alignSelf: 'flex-end' },
   inputContainer: {
     flexDirection: 'row',
@@ -199,6 +266,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+  attachButton: {
+    padding: 8,
+    marginRight: 6,
   },
   input: {
     flex: 1,
