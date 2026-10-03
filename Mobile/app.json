@@ -19,7 +19,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "package": "com.mdmoududahmmed.Mobile"
     },
     "web": {
       "output": "static",
@@ -40,6 +41,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8386eddb-7ec8-44f9-9c2d-1219bd16c28d"
+      }
     }
   }
 }

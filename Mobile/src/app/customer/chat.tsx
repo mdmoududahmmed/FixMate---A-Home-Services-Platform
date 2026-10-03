@@ -152,8 +152,10 @@ export default function ChatScreen() {
         });
         setMessages((prev) => [...prev, res.data]);
       } catch (error: any) {
-        console.error('Upload error:', error);
-        Alert.alert('Error', 'Failed to upload media');
+        // Capture and display the exact backend error message for debugging 400 error
+        const errorMsg = error?.response?.data?.message || error?.message || 'Failed to upload media';
+        console.error('Upload error details:', error?.response?.data);
+        Alert.alert('Upload Error', typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
       }
     }
   };
