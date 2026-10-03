@@ -20,8 +20,9 @@ async function bootstrap() {
     prefix: '/uploads',
   });
 
-  // Listen on 0.0.0.0 so physical mobile devices can connect to the server
-  await app.listen(3000, '0.0.0.0');
+  // Render-এর ডাইনামিক পোর্ট অথবা লোকালের জন্য ৩০০০ পোর্ট ব্যবহার করবে
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0');
 }
 
 bootstrap();
