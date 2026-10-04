@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: fixmate-backend
+    env: node
+    plan: free
+    rootDir: Backend
+    buildCommand: npm install && npm run build
+    preDeployCommand: npx prisma db push
+    startCommand: node dist/src/main
