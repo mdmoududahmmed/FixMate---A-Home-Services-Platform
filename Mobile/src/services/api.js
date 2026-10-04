@@ -2,11 +2,12 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 const api = axios.create({
-  baseURL: 'http://192.168.0.106:3000',
+  baseURL: 'https://fixmate-a-home-services-platform.onrender.com', // Render-er live URL
   headers: { 'Content-Type': 'application/json' },
+  timeout: 40000, // Render-er cold start (40 second) handle korar jonno
 });
 
-// এখানে ইন্টারসেপ্টর যুক্ত করা হচ্ছে - যেকোনো রিকোয়েস্টের আগে টোকেন বসাবে
+// ekhane interceptor jukto kora hocche - je kono request er age token bosabe
 api.interceptors.request.use(
   async (config) => {
     const token = await SecureStore.getItemAsync('token');
