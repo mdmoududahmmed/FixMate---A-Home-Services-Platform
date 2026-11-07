@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 const api = axios.create({
-  baseURL: 'https://fixmate-a-home-services-platform.onrender.com', // Render-er live URL
+  baseURL: 'https://fixmate-a-home-services-platform-7zkq.onrender.com', // Render-er live URL
   headers: { 'Content-Type': 'application/json' },
   timeout: 40000, // Render-er cold start (40 second) handle korar jonno
 });
